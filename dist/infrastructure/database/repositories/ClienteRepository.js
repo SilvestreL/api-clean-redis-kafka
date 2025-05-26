@@ -1,9 +1,9 @@
 "use strict";
-// src/infrastructure/database/repositories/ClienteRepository.ts
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClienteRepository = void 0;
 const Cliente_1 = require("../../../domain/entities/Cliente");
 const ClienteModel_1 = require("../models/ClienteModel");
+const CacheService_1 = require("../../cache/CacheService");
 class ClienteRepository {
     async criar(cliente) {
         const created = await ClienteModel_1.ClienteModel.create({
@@ -23,13 +23,24 @@ class ClienteRepository {
         }, { new: true });
         if (!updated)
             throw new Error('Cliente não encontrado');
-        return new Cliente_1.Cliente(updated._id, updated.nome, updated.email, updated.telefone, updated.createdAt, updated.updatedAt);
+        const clienteAtualizado = new Cliente_1.Cliente(updated._id, updated.nome, updated.email, updated.telefone, updated.createdAt, updated.updatedAt);
+        await CacheService_1.CacheService.del(cliente.id); // Evita dados desatualizados no cache
+        return clienteAtualizado;
     }
     async buscarPorId(id) {
+        // 1. Tenta pegar do cache
+        const cacheHit = await CacheService_1.CacheService.get(id);
+        if (cacheHit) {
+            return new Cliente_1.Cliente(cacheHit.id, cacheHit.nome, cacheHit.email, cacheHit.telefone, cacheHit.createdAt, cacheHit.updatedAt);
+        }
+        // 2. Se não achar no cache, busca no banco
         const found = await ClienteModel_1.ClienteModel.findById(id);
         if (!found)
             return null;
-        return new Cliente_1.Cliente(found._id, found.nome, found.email, found.telefone, found.createdAt, found.updatedAt);
+        const cliente = new Cliente_1.Cliente(found._id, found.nome, found.email, found.telefone, found.createdAt, found.updatedAt);
+        // 3. Salva no cache para próximas requisições
+        await CacheService_1.CacheService.set(id, cliente);
+        return cliente;
     }
     async listarTodos() {
         const clientes = await ClienteModel_1.ClienteModel.find();
@@ -39,6 +50,7 @@ class ClienteRepository {
         const cliente = await ClienteModel_1.ClienteModel.findByIdAndDelete(id);
         if (!cliente)
             throw new Error('Cliente não encontrado');
+        await CacheService_1.CacheService.del(id); // Remove do cache após exclusão
     }
 }
 exports.ClienteRepository = ClienteRepository;

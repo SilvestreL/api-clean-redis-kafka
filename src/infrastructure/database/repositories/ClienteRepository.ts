@@ -54,6 +54,7 @@ export class ClienteRepository implements IClienteRepository {
     // 1. Tenta pegar do cache
     const cacheHit = await CacheService.get(id);
     if (cacheHit) {
+       console.log(`[CACHE] Cliente ${id} encontrado no Redis`);
       return new Cliente(
         cacheHit.id,
         cacheHit.nome,
@@ -65,7 +66,8 @@ export class ClienteRepository implements IClienteRepository {
     }
 
     // 2. Se não achar no cache, busca no banco
-    const found = await ClienteModel.findById(id);
+     console.log(`[CACHE] Cliente ${id} encontrado no Redis`);  
+    const found = await ClienteModel.findById(id);  
     if (!found) return null;
 
     const cliente = new Cliente(
