@@ -76,4 +76,10 @@ export class ClienteRepository implements IClienteRepository {
         )
     );
   }
+  
+async excluir(id: string): Promise<void> {
+  const cliente = await ClienteModel.findByIdAndDelete(id);
+  if (!cliente) throw new Error('Cliente não encontrado');
+}
+
 }
