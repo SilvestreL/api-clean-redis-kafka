@@ -1,10 +1,28 @@
-// src/domain/repositories/IClienteRepository.ts
+import { BaseEntity } from './BaseEntity';
 
-import { Cliente } from '../entities/Cliente';
+export class Cliente extends BaseEntity {
+  public nome: string;
+  public email: string;
+  public telefone: string;
 
-export interface IClienteRepository {
-  criar(cliente: Cliente): Promise<Cliente>;
-  atualizar(cliente: Cliente): Promise<Cliente>;
-  buscarPorId(id: string): Promise<Cliente | null>;
-  listarTodos(): Promise<Cliente[]>;
+  constructor(
+    id: string,
+    nome: string,
+    email: string,
+    telefone: string,
+    createdAt?: Date,
+    updatedAt?: Date
+  ) {
+    super(id, createdAt, updatedAt);
+    this.nome = nome;
+    this.email = email;
+    this.telefone = telefone;
+  }
+
+  updateInfo(nome: string, email: string, telefone: string) {
+    this.nome = nome;
+    this.email = email;
+    this.telefone = telefone;
+    this.updateTimestamp();
+  }
 }

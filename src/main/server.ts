@@ -1,13 +1,12 @@
-import express, { Request, Response } from 'express';
+import app from './app';
+import { connectMongo } from '../infrastructure/database/mongo.connection';
 
-const app = express();
-app.use(express.json());
+const PORT = process.env.PORT || 3000;
 
-// Rota de teste
-app.get('/', (_req: Request, res: Response): Response => {
-  return res.send('API rodando!');
-});
+(async () => {
+  await connectMongo();
 
-app.listen(3000, () => {
-  console.log('Servidor rodando na porta 3000');
-});
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  });
+})();

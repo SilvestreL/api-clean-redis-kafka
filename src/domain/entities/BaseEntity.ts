@@ -1,30 +1,15 @@
-// src/domain/entities/Cliente.ts
+export abstract class BaseEntity {
+  public readonly id: string;
+  public readonly createdAt: Date;
+  public updatedAt: Date;
 
-import { BaseEntity } from './BaseEntity';
-
-export class Cliente extends BaseEntity {
-  public nome: string;
-  public email: string;
-  public telefone: string;
-
-  constructor(
-    id: string,
-    nome: string,
-    email: string,
-    telefone: string,
-    createdAt?: Date,
-    updatedAt?: Date
-  ) {
-    super(id, createdAt, updatedAt);
-    this.nome = nome;
-    this.email = email;
-    this.telefone = telefone;
+  constructor(id: string, createdAt?: Date, updatedAt?: Date) {
+    this.id = id;
+    this.createdAt = createdAt ?? new Date();
+    this.updatedAt = updatedAt ?? new Date();
   }
 
-  updateInfo(nome: string, email: string, telefone: string) {
-    this.nome = nome;
-    this.email = email;
-    this.telefone = telefone;
-    this.updateTimestamp();
+  updateTimestamp() {
+    this.updatedAt = new Date();
   }
 }
