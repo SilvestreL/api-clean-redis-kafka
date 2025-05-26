@@ -1,8 +1,7 @@
-// src/infrastructure/database/repositories/ClienteRepository.ts
-
 import { IClienteRepository } from '../../../domain/repositories/IClienteRepository';
 import { Cliente } from '../../../domain/entities/Cliente';
 import { ClienteModel } from '../models/ClienteModel';
+import { CacheService } from '../../cache/CacheService';
 
 export class ClienteRepository implements IClienteRepository {
   async criar(cliente: Cliente): Promise<Cliente> {
@@ -37,7 +36,7 @@ export class ClienteRepository implements IClienteRepository {
 
     if (!updated) throw new Error('Cliente não encontrado');
 
-    return new Cliente(
+    const clienteAtualizado = new Cliente(
       updated._id,
       updated.nome,
       updated.email,
@@ -45,13 +44,31 @@ export class ClienteRepository implements IClienteRepository {
       updated.createdAt,
       updated.updatedAt
     );
+
+    await CacheService.del(cliente.id); // Evita dados desatualizados no cache
+
+    return clienteAtualizado;
   }
 
   async buscarPorId(id: string): Promise<Cliente | null> {
+    // 1. Tenta pegar do cache
+    const cacheHit = await CacheService.get(id);
+    if (cacheHit) {
+      return new Cliente(
+        cacheHit.id,
+        cacheHit.nome,
+        cacheHit.email,
+        cacheHit.telefone,
+        cacheHit.createdAt,
+        cacheHit.updatedAt
+      );
+    }
+
+    // 2. Se não achar no cache, busca no banco
     const found = await ClienteModel.findById(id);
     if (!found) return null;
 
-    return new Cliente(
+    const cliente = new Cliente(
       found._id,
       found.nome,
       found.email,
@@ -59,6 +76,11 @@ export class ClienteRepository implements IClienteRepository {
       found.createdAt,
       found.updatedAt
     );
+
+    // 3. Salva no cache para próximas requisições
+    await CacheService.set(id, cliente);
+
+    return cliente;
   }
 
   async listarTodos(): Promise<Cliente[]> {
@@ -76,10 +98,11 @@ export class ClienteRepository implements IClienteRepository {
         )
     );
   }
-  
-async excluir(id: string): Promise<void> {
-  const cliente = await ClienteModel.findByIdAndDelete(id);
-  if (!cliente) throw new Error('Cliente não encontrado');
-}
 
+  async excluir(id: string): Promise<void> {
+    const cliente = await ClienteModel.findByIdAndDelete(id);
+    if (!cliente) throw new Error('Cliente não encontrado');
+
+    await CacheService.del(id); // Remove do cache após exclusão
+  }
 }
