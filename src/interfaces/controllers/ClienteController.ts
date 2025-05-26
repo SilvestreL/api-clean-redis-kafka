@@ -15,9 +15,8 @@ const createClienteSchema = z.object({
 // Inversão de dependência
 const clienteRepository = new ClienteRepository();
 const createClienteUseCase = new CreateCliente(clienteRepository);
-
 export class ClienteController {
-  static async criar(req: Request, res: Response): Promise<Response> {
+  static criar = async (req: Request, res: Response): Promise<Response> => {
     try {
       const data = createClienteSchema.parse(req.body);
       const clienteCriado = await createClienteUseCase.execute(data);
@@ -30,9 +29,9 @@ export class ClienteController {
       console.error('Erro ao criar cliente:', err);
       return res.status(500).json({ erro: 'Erro interno do servidor' });
     }
-  }
+  };
 
-  static async buscarPorId(req: Request, res: Response): Promise<Response> {
+  static buscarPorId = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { id } = req.params;
       const cliente = await clienteRepository.buscarPorId(id);
@@ -44,9 +43,9 @@ export class ClienteController {
       console.error('Erro ao buscar cliente:', err);
       return res.status(500).json({ erro: 'Erro interno do servidor' });
     }
-  }
+  };
 
-  static async atualizar(req: Request, res: Response): Promise<Response> {
+  static atualizar = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { id } = req.params;
       const data = createClienteSchema.parse(req.body);
@@ -68,9 +67,9 @@ export class ClienteController {
       console.error('Erro ao atualizar cliente:', err);
       return res.status(500).json({ erro: 'Erro interno do servidor' });
     }
-  }
+  };
 
-  static async listarTodos(_req: Request, res: Response): Promise<Response> {
+  static listarTodos = async (_req: Request, res: Response): Promise<Response> => {
     try {
       const clientes = await clienteRepository.listarTodos();
       return res.json(clientes);
@@ -78,20 +77,20 @@ export class ClienteController {
       console.error('Erro ao listar clientes:', err);
       return res.status(500).json({ erro: 'Erro interno do servidor' });
     }
-  }
-   
-static async excluir(req: Request, res: Response): Promise<Response> {
-  try {
-    const { id } = req.params;
-    await clienteRepository.excluir(id);
-    return res.status(204).send();
-  } catch (err) {
-    if (err instanceof Error && err.message.includes('Cliente não encontrado')) {
-      return res.status(404).json({ erro: err.message });
-    }
+  };
 
-    console.error('Erro ao excluir cliente:', err);
-    return res.status(500).json({ erro: 'Erro interno do servidor' });
-  }
-}
+  static excluir = async (req: Request, res: Response): Promise<Response> => {
+    try {
+      const { id } = req.params;
+      await clienteRepository.excluir(id);
+      return res.status(204).send();
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('Cliente não encontrado')) {
+        return res.status(404).json({ erro: err.message });
+      }
+
+      console.error('Erro ao excluir cliente:', err);
+      return res.status(500).json({ erro: 'Erro interno do servidor' });
+    }
+  };
 }
