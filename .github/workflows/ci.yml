@@ -11,23 +11,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout do repositório
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: 🐳 Subir containers com Docker Compose
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose version
+
+      - name: Set up Docker Compose and Build Services
         run: docker-compose -f docker-compose.yml up -d --build
 
-      - name: ⏳ Aguardar containers estarem prontos
+      - name: Wait for services to be ready
         run: |
-          echo "Aguardando serviços subirem..."
-          sleep 15  # ou use um healthcheck no docker-compose
+          echo "⏳ Aguardando containers..."
+          sleep 30
 
-      - name: 🔍 Rodar linter na máquina host
-        run: docker exec dynadok-app npm run lint
+      - name: Run linter
+        run: npm run lint
 
-      - name: ✅ Rodar testes dentro do container da aplicação
+      - name: Run tests inside the app container
         run: docker exec dynadok-app npm run test
 
-      - name: 🧹 Encerrar containers e limpar volumes
+      - name: Stop and clean up
         if: always()
         run: docker-compose down --volumes
