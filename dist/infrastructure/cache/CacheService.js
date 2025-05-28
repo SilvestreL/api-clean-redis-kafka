@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CacheService = void 0;
-const RedisClient_1 = require("./RedisClient"); // correto!
+const RedisClient_1 = require("./RedisClient");
 class CacheService {
     static async get(key) {
         const data = await RedisClient_1.redis.get(this.prefix + key);

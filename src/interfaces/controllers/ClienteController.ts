@@ -1,40 +1,101 @@
-// src/interfaces/controllers/ClienteController.ts
-
 import { Request, Response } from 'express';
-import { CreateCliente } from '../../application/use-cases/CreateCliente';
-import { ClienteRepository } from '../../infrastructure/database/repositories/ClienteRepository';
 import { z } from 'zod';
-import { Cliente } from '../../domain/entities/Cliente';
 
-const createClienteSchema = z.object({
+import { CreateCliente } from '../../application/use-cases/CreateCliente';
+import { GetClienteById } from '../../application/use-cases/GetClienteById';
+import { ListClientes } from '../../application/use-cases/ListClientes';
+import { UpdateCliente } from '../../application/use-cases/UpdateCliente';
+import { DeleteCliente } from '../../application/use-cases/DeleteCliente';
+import { IClienteRepository } from '../../domain/repositories/IClienteRepository';
+import { IKafkaProducerService } from '../../application/ports/IKafkaProducerService';
+
+const clienteSchema = z.object({
   nome: z.string().min(1),
   email: z.string().email(),
   telefone: z.string().min(8),
 });
 
-// Inversão de dependência
-const clienteRepository = new ClienteRepository();
-const createClienteUseCase = new CreateCliente(clienteRepository);
 export class ClienteController {
-  static criar = async (req: Request, res: Response): Promise<Response> => {
+  constructor(
+    private readonly clienteRepository: IClienteRepository,
+    private readonly kafkaProducer: IKafkaProducerService
+  ) {}
+
+  /**
+   * @swagger
+   * /clientes:
+   *   post:
+   *     summary: Cadastra um novo cliente
+   *     tags: [Clientes]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - nome
+   *               - email
+   *               - telefone
+   *             properties:
+   *               nome:
+   *                 type: string
+   *                 example: João da Silva
+   *               email:
+   *                 type: string
+   *                 example: joao@email.com
+   *               telefone:
+   *                 type: string
+   *                 example: "11999999999"
+   *     responses:
+   *       201:
+   *         description: Cliente criado com sucesso
+   *       400:
+   *         description: Dados inválidos
+   *       500:
+   *         description: Erro interno do servidor
+   */
+  criar = async (req: Request, res: Response): Promise<Response> => {
     try {
-      const data = createClienteSchema.parse(req.body);
-      const clienteCriado = await createClienteUseCase.execute(data);
+      const data = clienteSchema.parse(req.body);
+      const useCase = new CreateCliente(this.clienteRepository, this.kafkaProducer);
+      const clienteCriado = await useCase.execute(data);
       return res.status(201).json(clienteCriado);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ erro: 'Dados inválidos', detalhes: err.errors });
       }
-
       console.error('Erro ao criar cliente:', err);
       return res.status(500).json({ erro: 'Erro interno do servidor' });
     }
   };
 
-  static buscarPorId = async (req: Request, res: Response): Promise<Response> => {
+  /**
+   * @swagger
+   * /clientes/{id}:
+   *   get:
+   *     summary: Busca um cliente pelo ID
+   *     tags: [Clientes]
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: ID do cliente
+   *     responses:
+   *       200:
+   *         description: Cliente encontrado
+   *       404:
+   *         description: Cliente não encontrado
+   *       500:
+   *         description: Erro interno do servidor
+   */
+  buscarPorId = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { id } = req.params;
-      const cliente = await clienteRepository.buscarPorId(id);
+      const useCase = new GetClienteById(this.clienteRepository);
+      const cliente = await useCase.execute(id);
 
       if (!cliente) return res.status(404).json({ erro: 'Cliente não encontrado' });
 
@@ -45,33 +106,81 @@ export class ClienteController {
     }
   };
 
-  static atualizar = async (req: Request, res: Response): Promise<Response> => {
+  /**
+   * @swagger
+   * /clientes/{id}:
+   *   put:
+   *     summary: Atualiza os dados de um cliente existente
+   *     tags: [Clientes]
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: ID do cliente
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - nome
+   *               - email
+   *               - telefone
+   *             properties:
+   *               nome:
+   *                 type: string
+   *               email:
+   *                 type: string
+   *               telefone:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Cliente atualizado com sucesso
+   *       400:
+   *         description: Dados inválidos
+   *       404:
+   *         description: Cliente não encontrado
+   *       500:
+   *         description: Erro interno do servidor
+   */
+  atualizar = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { id } = req.params;
-      const data = createClienteSchema.parse(req.body);
-
-      const clienteExistente = await clienteRepository.buscarPorId(id);
-      if (!clienteExistente) {
-        return res.status(404).json({ erro: 'Cliente não encontrado' });
-      }
-
-      clienteExistente.updateInfo(data.nome, data.email, data.telefone);
-      const atualizado = await clienteRepository.atualizar(clienteExistente);
-
+      const data = clienteSchema.parse(req.body);
+      const useCase = new UpdateCliente(this.clienteRepository);
+      const atualizado = await useCase.execute({ id, ...data });
       return res.json(atualizado);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ erro: 'Dados inválidos', detalhes: err.errors });
       }
-
+      if (err instanceof Error && err.message === 'Cliente não encontrado') {
+        return res.status(404).json({ erro: err.message });
+      }
       console.error('Erro ao atualizar cliente:', err);
       return res.status(500).json({ erro: 'Erro interno do servidor' });
     }
   };
 
-  static listarTodos = async (_req: Request, res: Response): Promise<Response> => {
+  /**
+   * @swagger
+   * /clientes:
+   *   get:
+   *     summary: Lista todos os clientes
+   *     tags: [Clientes]
+   *     responses:
+   *       200:
+   *         description: Lista de clientes
+   *       500:
+   *         description: Erro interno do servidor
+   */
+  listarTodos = async (_req: Request, res: Response): Promise<Response> => {
     try {
-      const clientes = await clienteRepository.listarTodos();
+      const useCase = new ListClientes(this.clienteRepository);
+      const clientes = await useCase.execute();
       return res.json(clientes);
     } catch (err) {
       console.error('Erro ao listar clientes:', err);
@@ -79,16 +188,37 @@ export class ClienteController {
     }
   };
 
-  static excluir = async (req: Request, res: Response): Promise<Response> => {
+  /**
+   * @swagger
+   * /clientes/{id}:
+   *   delete:
+   *     summary: Remove um cliente pelo ID
+   *     tags: [Clientes]
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: ID do cliente
+   *     responses:
+   *       204:
+   *         description: Cliente removido com sucesso
+   *       404:
+   *         description: Cliente não encontrado
+   *       500:
+   *         description: Erro interno do servidor
+   */
+  excluir = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { id } = req.params;
-      await clienteRepository.excluir(id);
+      const useCase = new DeleteCliente(this.clienteRepository);
+      await useCase.execute(id);
       return res.status(204).send();
     } catch (err) {
-      if (err instanceof Error && err.message.includes('Cliente não encontrado')) {
+      if (err instanceof Error && err.message === 'Cliente não encontrado') {
         return res.status(404).json({ erro: err.message });
       }
-
       console.error('Erro ao excluir cliente:', err);
       return res.status(500).json({ erro: 'Erro interno do servidor' });
     }

@@ -3,7 +3,7 @@
 import { Schema, model, Document } from 'mongoose';
 
 export interface ClienteDocument extends Document {
-  _id: string; // UUID
+  _id: string; 
   nome: string;
   email: string;
   telefone: string;

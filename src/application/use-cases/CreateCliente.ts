@@ -1,30 +1,45 @@
-// src/application/use-cases/CreateCliente.ts
-
 import { IClienteRepository } from '../../domain/repositories/IClienteRepository';
 import { Cliente } from '../../domain/entities/Cliente';
-import { v4 as uuidv4 } from 'uuid';
+import { IKafkaProducerService } from '../ports/IKafkaProducerService';
+import { z } from 'zod';
 
-export interface CreateClienteDTO {
+type CriarClienteDTO = {
   nome: string;
   email: string;
   telefone: string;
-}
-
+};
 export class CreateCliente {
-  constructor(private readonly clienteRepository: IClienteRepository) {}
+  constructor(
+    private readonly clienteRepository: IClienteRepository,
+    private readonly kafkaProducer: IKafkaProducerService
+  ) {}
 
-  async execute(data: CreateClienteDTO): Promise<Cliente> {
-    const cliente = new Cliente(
-      uuidv4(), // ← Aqui usamos o UUID como id
-      data.nome,
-      data.email,
-      data.telefone
-    );
+  async execute(data: { nome: string; email: string; telefone: string }): Promise<Cliente> {
+    const schema = z.object({
+      nome: z.string().min(1, 'Nome é obrigatório'),
+      email: z.string().email('Email inválido'),
+      telefone: z.string().min(1, 'Telefone é obrigatório'),
+    });
 
-    const clienteCriado = await this.clienteRepository.criar(cliente);
+    const parsed = schema.parse(data);
 
-    // Aqui depois você poderá chamar o KafkaProducer:
-    // await this.kafkaProducer.send('cliente_criado', clienteCriado);
+    console.log('[MongoDB] Criando cliente...');
+    
+    const clienteCriado = await this.clienteRepository.criar({
+      nome: parsed.nome,
+      email: parsed.email,
+      telefone: parsed.telefone,
+    });
+
+    console.log('[MongoDB] Cliente criado com sucesso:', clienteCriado);
+
+    try {
+      console.log('[Kafka] Enviando mensagem para tópico cliente.criado...');
+      await this.kafkaProducer.send('cliente.criado', clienteCriado);
+      console.log('[Kafka] Mensagem enviada com sucesso');
+    } catch (err) {
+      console.error('[Kafka] Erro ao enviar mensagem:', err);
+    }
 
     return clienteCriado;
   }

@@ -5,15 +5,15 @@ exports.CreateCliente = void 0;
 const Cliente_1 = require("../../domain/entities/Cliente");
 const uuid_1 = require("uuid");
 class CreateCliente {
-    constructor(clienteRepository) {
+    constructor(clienteRepository, kafkaProducer) {
         this.clienteRepository = clienteRepository;
+        this.kafkaProducer = kafkaProducer;
     }
     async execute(data) {
-        const cliente = new Cliente_1.Cliente((0, uuid_1.v4)(), // ← Aqui usamos o UUID como id
-        data.nome, data.email, data.telefone);
+        const cliente = new Cliente_1.Cliente((0, uuid_1.v4)(), data.nome, data.email, data.telefone);
         const clienteCriado = await this.clienteRepository.criar(cliente);
-        // Aqui depois você poderá chamar o KafkaProducer:
-        // await this.kafkaProducer.send('cliente_criado', clienteCriado);
+        // Publish no Kafka via porta
+        await this.kafkaProducer.send('cliente.criado', clienteCriado);
         return clienteCriado;
     }
 }

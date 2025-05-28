@@ -1,24 +1,33 @@
 import { IClienteRepository } from '../../../domain/repositories/IClienteRepository';
 import { Cliente } from '../../../domain/entities/Cliente';
 import { ClienteModel } from '../models/ClienteModel';
-import { CacheService } from '../../cache/CacheService';
+import { ICacheService } from '../../../application/ports/ICacheService';
+import { v4 as uuidv4 } from 'uuid';
+
+type CriarClienteDTO = {
+  nome: string;
+  email: string;
+  telefone: string;
+};
 
 export class ClienteRepository implements IClienteRepository {
-  async criar(cliente: Cliente): Promise<Cliente> {
-    const created = await ClienteModel.create({
-      _id: cliente.id,
-      nome: cliente.nome,
-      email: cliente.email,
-      telefone: cliente.telefone,
+  constructor(private readonly cacheService: ICacheService) {}
+
+  async criar(dados: CriarClienteDTO): Promise<Cliente> {
+    const clienteCriado = await ClienteModel.create({
+      _id: uuidv4(),
+      nome: dados.nome,
+      email: dados.email,
+      telefone: dados.telefone,
     });
 
     return new Cliente(
-      created._id,
-      created.nome,
-      created.email,
-      created.telefone,
-      created.createdAt,
-      created.updatedAt
+      clienteCriado._id,
+      clienteCriado.nome,
+      clienteCriado.email,
+      clienteCriado.telefone,
+      clienteCriado.createdAt,
+      clienteCriado.updatedAt
     );
   }
 
@@ -45,16 +54,13 @@ export class ClienteRepository implements IClienteRepository {
       updated.updatedAt
     );
 
-    await CacheService.del(cliente.id); // Evita dados desatualizados no cache
-
+    await this.cacheService.del(cliente.id);
     return clienteAtualizado;
   }
 
   async buscarPorId(id: string): Promise<Cliente | null> {
-    // 1. Tenta pegar do cache
-    const cacheHit = await CacheService.get(id);
+    const cacheHit = await this.cacheService.get<Cliente>(id);
     if (cacheHit) {
-       console.log(`[CACHE] Cliente ${id} encontrado no Redis`);
       return new Cliente(
         cacheHit.id,
         cacheHit.nome,
@@ -65,9 +71,7 @@ export class ClienteRepository implements IClienteRepository {
       );
     }
 
-    // 2. Se não achar no cache, busca no banco
-     console.log(`[CACHE] Cliente ${id} encontrado no Redis`);  
-    const found = await ClienteModel.findById(id);  
+    const found = await ClienteModel.findById(id);
     if (!found) return null;
 
     const cliente = new Cliente(
@@ -79,15 +83,12 @@ export class ClienteRepository implements IClienteRepository {
       found.updatedAt
     );
 
-    // 3. Salva no cache para próximas requisições
-    await CacheService.set(id, cliente);
-
+    await this.cacheService.set(id, cliente);
     return cliente;
   }
 
   async listarTodos(): Promise<Cliente[]> {
     const clientes = await ClienteModel.find();
-
     return clientes.map(
       (c) =>
         new Cliente(
@@ -104,7 +105,6 @@ export class ClienteRepository implements IClienteRepository {
   async excluir(id: string): Promise<void> {
     const cliente = await ClienteModel.findByIdAndDelete(id);
     if (!cliente) throw new Error('Cliente não encontrado');
-
-    await CacheService.del(id); // Remove do cache após exclusão
+    await this.cacheService.del(id);
   }
 }
