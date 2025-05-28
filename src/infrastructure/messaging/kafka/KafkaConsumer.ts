@@ -26,7 +26,7 @@ export class ClienteConsumer {
           if (data) {
             try {
               const parsed = JSON.parse(data);
-              console.log(`[Kafka][Consumer] Mensagem recebida:`, parsed);
+              console.log('[Kafka][Consumer] Mensagem recebida:', parsed);
               await this.handler(parsed);
             } catch (err) {
               console.error(`[Kafka][Consumer] Erro ao processar mensagem no tópico ${topic}:`, err);
@@ -37,18 +37,18 @@ export class ClienteConsumer {
         },
       });
 
-      console.log(`[Kafka][Consumer] Consumidor rodando...`);
+      console.log('[Kafka][Consumer] Consumidor rodando...');
     } catch (error) {
-      console.error(`[Kafka][Consumer] Erro ao conectar:`, error);
+      console.error('[Kafka][Consumer] Erro ao conectar:', error);
     }
   }
 
   async disconnect(): Promise<void> {
     try {
       await this.consumer.disconnect();
-      console.log(`[Kafka][Consumer] Desconectado com sucesso.`);
+      console.log('[Kafka][Consumer] Desconectado com sucesso.');
     } catch (err) {
-      console.error(`[Kafka][Consumer] Erro ao desconectar:`, err);
+      console.error('[Kafka][Consumer] Erro ao desconectar:', err);
     }
   }
 }
