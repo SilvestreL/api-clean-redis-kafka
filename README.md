@@ -36,13 +36,13 @@ Isso irá subir:
 
 ## 📌 Endpoints Disponíveis
 
-| Método | Rota             | Descrição                         |
-|--------|------------------|-----------------------------------|
-| POST   | `/clientes`      | Cadastra um novo cliente          |
-| GET    | `/clientes/:id`  | Consulta um cliente por ID        |
-| PUT    | `/clientes/:id`  | Atualiza um cliente               |
-| DELETE | `/clientes/:id`  | Remove um cliente                 |
-| GET    | `/clientes`      | Lista todos os clientes           |
+| Método | Rota            | Descrição                  |
+| ------ | --------------- | -------------------------- |
+| POST   | `/clientes`     | Cadastra um novo cliente   |
+| GET    | `/clientes/:id` | Consulta um cliente por ID |
+| PUT    | `/clientes/:id` | Atualiza um cliente        |
+| DELETE | `/clientes/:id` | Remove um cliente          |
+| GET    | `/clientes`     | Lista todos os clientes    |
 
 ---
 
@@ -74,17 +74,16 @@ npm run test
 
 ## ⚙️ CI/CD com GitHub Actions
 
-> Crie um arquivo `.github/workflows/test.yml`:
+> Workflow de CI já incluso em `.github/workflows/ci.yml`:
 
 ```yaml
 name: Test and Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
-
+    branches: [main]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -92,13 +91,13 @@ jobs:
     services:
       mongo:
         image: mongo
-        ports: ['27017:27017']
+        ports: ["27017:27017"]
       redis:
         image: redis
-        ports: ['6379:6379']
+        ports: ["6379:6379"]
       kafka:
         image: bitnami/kafka:latest
-        ports: ['9092:9092']
+        ports: ["9092:9092"]
         env:
           KAFKA_BROKER_ID: 1
           KAFKA_CFG_ZOOKEEPER_CONNECT: localhost:2181
@@ -106,13 +105,13 @@ jobs:
           KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       zookeeper:
         image: bitnami/zookeeper:latest
-        ports: ['2181:2181']
+        ports: ["2181:2181"]
 
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - run: npm ci
       - run: npm run test
 ```
