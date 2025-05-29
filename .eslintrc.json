@@ -8,7 +8,8 @@
   "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
   "env": {
     "node": true,
-    "es2021": true
+    "es2021": true,
+    "jest": true
   },
   "rules": {
     "semi": ["error", "always"],
