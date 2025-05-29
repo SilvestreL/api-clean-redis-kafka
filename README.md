@@ -1,4 +1,4 @@
-# 🧾 Teste Dynadok – Cadastro e Consulta de Clientes
+# 🧾 Teste – Cadastro e Consulta de Clientes
 
 Este projeto é parte de um desafio técnico, focado em boas práticas de arquitetura, integração com Redis, mensageria (Kafka) e Clean Architecture em Node.js com TypeScript.
 
