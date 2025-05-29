@@ -29,9 +29,15 @@ docker-compose up --build
 Isso irá subir:
 
 - API Node.js → `http://localhost:3000`
-- MongoDB → `localhost:27017`
-- Redis → `localhost:6379`
+- MongoDB → `mongo:27017`
+- Redis → `redis:6379`
 - Kafka + Zookeeper
+
+> Para parar e remover os containers:
+
+```bash
+docker-compose down --volumes
+```
 
 ---
 
@@ -51,7 +57,7 @@ Isso irá subir:
 
 Acesse a documentação interativa no Swagger:
 
-```
+```bash
 http://localhost:3000/api-docs
 ```
 
@@ -81,56 +87,23 @@ src/
 npm run test
 ```
 
-> Os testes cobrem serviços, repositórios e o fluxo de integração com MongoDB, Redis e Kafka.
+Os testes incluem:
+
+- Integração com MongoDB (em container)
+- Cache Redis (mockado com Jest)
+- Kafka Producer (mockado)
 
 ---
 
 ## ⚙️ CI/CD com GitHub Actions
 
-O projeto já inclui um workflow em `.github/workflows/ci.yml`.
+O projeto possui CI automatizado via GitHub Actions.
 
-Esse workflow roda testes automáticos em cada `push` ou `pull request` na branch `main`.
+A cada push ou pull request na branch `main`, é executado um workflow que:
 
-```yaml
-name: Test and Build
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    services:
-      mongo:
-        image: mongo
-        ports: ["27017:27017"]
-      redis:
-        image: redis
-        ports: ["6379:6379"]
-      kafka:
-        image: bitnami/kafka:latest
-        ports: ["9092:9092"]
-        env:
-          KAFKA_BROKER_ID: 1
-          KAFKA_CFG_ZOOKEEPER_CONNECT: localhost:2181
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      zookeeper:
-        image: bitnami/zookeeper:latest
-        ports: ["2181:2181"]
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "18"
-      - run: npm ci
-      - run: npm run test
-```
+- Sobe os containers com Docker Compose.
+- Aguarda os serviços estarem prontos.
+- Executa linter e testes dentro do container da aplicação.
 
 ---
 
