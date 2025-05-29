@@ -2,6 +2,7 @@
 process.env.MONGO_URI = 'mongodb://localhost:27017/clientes_test';
 process.env.REDIS_HOST = 'localhost';
 process.env.KAFKA_DISABLED = 'true';
+import * as redisClient from '../../src/infrastructure/cache/RedisClient';
 
 // ✅ Mocks de dependências (antes de qualquer import real)
 jest.mock('ioredis', () => {
@@ -45,10 +46,11 @@ describe('ClienteController (integração)', () => {
   });
 
   // ✅ Desconecta ao final
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await redis.quit();
-  });
+afterAll(async () => {
+  await mongoose.disconnect();
+  await redisClient.quit(); 
+  jest.resetAllMocks();
+});
 
   // ✅ Teste principal
   it(

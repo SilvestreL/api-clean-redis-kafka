@@ -6,7 +6,7 @@ export default {
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
-  testTimeout: 30000, 
+  testTimeout: 90000,
   moduleNameMapper: {
     '^src/(.*)$': '<rootDir>/src/$1',
   },

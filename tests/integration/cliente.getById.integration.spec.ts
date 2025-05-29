@@ -5,6 +5,7 @@ jest.mock('../../src/infrastructure/cache/RedisClient', () => ({
   get: jest.fn(),
   set: jest.fn(),
   del: jest.fn(),
+  quit: jest.fn(), 
 }));
 
 import request from 'supertest';
@@ -32,6 +33,7 @@ describe('GET /clientes/:id (com Redis)', () => {
       await mongoose.connection.db.dropDatabase();
     }
     await mongoose.disconnect();
+    await redisClient.quit();
     jest.resetAllMocks();
   });
 
