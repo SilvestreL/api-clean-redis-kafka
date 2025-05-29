@@ -10,7 +10,9 @@ export const connectMongo = async (): Promise<void> => {
   }
 
   try {
-    await mongoose.connect(uri);
+    await mongoose.connect(uri, {
+      dbName: 'test-clientes', // ✅ Defina explicitamente o banco para testes
+    });
     console.log(`✅ Conectado ao MongoDB em ${uri}`);
   } catch (error) {
     if (process.env.NODE_ENV === 'test') throw error;

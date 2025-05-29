@@ -23,7 +23,7 @@ describe('GET /clientes/:id (com Redis)', () => {
   let clienteCriado: any;
 
   beforeAll(async () => {
-    await mongoose.connect('mongodb://localhost:27017/testdb', {
+    await mongoose.connect('mongodb://mongo:27017/testdb', {
       dbName: 'test-clientes',
     });
   });

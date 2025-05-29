@@ -1,5 +1,5 @@
 // ✅ Variáveis de ambiente ANTES de qualquer import
-process.env.MONGO_URI = 'mongodb://localhost:27017/clientes_test';
+process.env.MONGO_URI = 'mongodb://mongo:27017/testdb';
 process.env.REDIS_HOST = 'localhost';
 process.env.KAFKA_DISABLED = 'true';
 import * as redisClient from '../../src/infrastructure/cache/RedisClient';
